@@ -1,0 +1,359 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The OSI Model — One Message, Seven Layers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f0f24; --bg2:#15153000; --panel:#1c1c40; --panel2:#232352;
+    --ink:#f2f2ff; --muted:#9a9ac4; --line:#33336a;
+    --l7:#ff6b9d; --l6:#ffa94d; --l5:#ffd43b; --l4:#69db7c;
+    --l3:#38d9d9; --l2:#4dabf7; --l1:#b197fc;
+    --disp:"Space Grotesk",system-ui,sans-serif;
+    --body:"Inter",system-ui,sans-serif;
+    --mono:"Space Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:
+      radial-gradient(1200px 600px at 15% -10%, #241a4a 0%, transparent 55%),
+      radial-gradient(1000px 700px at 100% 0%, #12294a 0%, transparent 50%),
+      var(--bg);
+    color:var(--ink);font-family:var(--body);line-height:1.5;
+    -webkit-font-smoothing:antialiased;padding:22px;min-height:100vh;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  header.top{margin-bottom:20px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:var(--disp);font-weight:700;font-size:clamp(26px,4.4vw,42px);line-height:1.05;margin:.35em 0 .2em;letter-spacing:-.01em}
+  h1 .hl{background:linear-gradient(90deg,var(--l7),var(--l5),var(--l3),var(--l1));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);max-width:60ch;font-size:15px}
+  .msgline{margin-top:12px;font-size:14px;color:var(--muted)}
+  .msgline b{color:var(--ink);font-weight:600}
+
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 8px}
+  button{font-family:var(--disp);font-weight:600;font-size:14px;border:0;border-radius:12px;padding:11px 18px;cursor:pointer;color:#0f0f24;transition:transform .12s ease,filter .12s ease}
+  button:hover{filter:brightness(1.06)}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.45;cursor:not-allowed;filter:none}
+  .btn-send{background:linear-gradient(90deg,var(--l7),var(--l6))}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .btn-ghost:hover{color:var(--ink)}
+  .speed{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{background:transparent;color:var(--muted);border-radius:0;padding:8px 12px;font-weight:500}
+  .seg button.on{background:var(--panel2);color:var(--ink)}
+  .status{font-family:var(--mono);font-size:12.5px;color:var(--muted);min-height:1.2em;margin:6px 2px 14px}
+  .status b{color:var(--ink)}
+
+  /* stage */
+  .stage{position:relative;display:grid;grid-template-columns:1fr 72px 1fr;gap:14px;align-items:stretch}
+  .device{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:20px;padding:12px}
+  .dev-head{display:flex;align-items:center;justify-content:space-between;font-family:var(--disp);font-size:13px;color:var(--muted);padding:2px 6px 10px}
+  .dev-head .dot{width:8px;height:8px;border-radius:50%;background:var(--l4);box-shadow:0 0 10px var(--l4)}
+  .rows{display:flex;flex-direction:column;gap:7px}
+  .row{position:relative;display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:12px;background:#00000026;border:1px solid transparent;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}
+  .row:hover{background:#ffffff0d}
+  .row:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .row .num{font-family:var(--mono);font-size:12px;width:20px;text-align:center;color:#0f0f24;background:var(--lc);border-radius:6px;padding:2px 0;font-weight:700}
+  .row .nm{font-family:var(--disp);font-weight:600;font-size:14px}
+  .row .jb{font-size:11.5px;color:var(--muted);margin-left:auto;text-align:right}
+  .row.active{border-color:var(--lc);background:color-mix(in srgb,var(--lc) 16%,transparent);transform:translateX(2px)}
+  .row.active .nm{color:var(--lc)}
+  .row .pdu{font-family:var(--mono);font-size:10px;color:var(--lc);border:1px solid var(--lc);border-radius:5px;padding:1px 5px;opacity:.75}
+  .device.rx .row{cursor:default}
+
+  .wire{position:relative;display:flex;align-items:center;justify-content:center}
+  .wire .track{position:absolute;top:12%;bottom:12%;width:2px;background:linear-gradient(var(--line),transparent,var(--line));left:50%;transform:translateX(-50%)}
+  .wire .label{position:absolute;bottom:-2px;font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;width:120px;left:50%;transform:translateX(-50%)}
+
+  /* travelling token */
+  .token{position:absolute;top:0;left:0;z-index:6;display:flex;align-items:center;gap:4px;padding:6px 8px;border-radius:12px;
+    background:#0c0c22ee;border:1px solid #ffffff2b;backdrop-filter:blur(3px);
+    box-shadow:0 8px 30px #0009;transition:transform .55s cubic-bezier(.5,.05,.3,1);pointer-events:none;white-space:nowrap}
+  .token.hidden{opacity:0;transform:scale(.6)}
+  .token .chip{font-family:var(--mono);font-size:10px;font-weight:700;color:#0f0f24;border-radius:5px;padding:2px 5px;animation:pop .3s ease}
+  .token .pay{font-size:15px;padding:0 3px}
+  .token .form{font-family:var(--mono);font-size:9.5px;color:var(--muted);border-left:1px solid #ffffff26;padding-left:6px;margin-left:2px}
+  .token.bits .pay,.token.bits .chip,.token.bits .form{display:none}
+  .token .bitstream{display:none;font-family:var(--mono);font-size:12px;letter-spacing:1px;color:var(--l1)}
+  .token.bits .bitstream{display:inline}
+  @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+
+  /* delivered bubble */
+  .bubble{margin-top:9px;align-self:flex-end;max-width:82%;background:linear-gradient(135deg,var(--l7),var(--l6));color:#22093a;font-weight:600;
+    padding:9px 13px;border-radius:16px 16px 5px 16px;font-size:14px;opacity:0;transform:translateY(6px);transition:.4s;box-shadow:0 6px 20px #0006}
+  .bubble.show{opacity:1;transform:none}
+
+  /* detail panel */
+  .detail{margin-top:16px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:20px;padding:18px 20px;min-height:120px}
+  .detail .dtop{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .detail .badge{font-family:var(--mono);font-weight:700;color:#0f0f24;background:var(--dc,var(--muted));border-radius:8px;padding:4px 9px;font-size:13px}
+  .detail h3{font-family:var(--disp);margin:0;font-size:20px;color:var(--dc,var(--ink))}
+  .detail .role{color:var(--muted);font-size:13px}
+  .detail p{margin:12px 0 0;font-size:14.5px;max-width:70ch}
+  .detail .analog{color:var(--muted);font-size:13.5px;margin-top:8px}
+  .detail .analog b{color:var(--ink);font-weight:600}
+  .detail .protos{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
+  .detail .protos span{font-family:var(--mono);font-size:11px;color:var(--dc,var(--muted));border:1px solid var(--dc,var(--line));border-radius:6px;padding:3px 8px;opacity:.85}
+  .hint{color:var(--muted);font-size:13px;font-style:italic}
+
+  footer{margin-top:22px;color:var(--muted);font-size:12.5px;text-align:center;font-family:var(--mono)}
+
+  @media (max-width:720px){
+    .stage{grid-template-columns:1fr;gap:10px}
+    .wire{height:54px}
+    .wire .track{top:50%;bottom:auto;left:12%;right:12%;width:auto;height:2px;background:linear-gradient(90deg,var(--line),transparent,var(--line))}
+    .wire .label{bottom:auto;top:calc(50% + 8px)}
+    .row .jb{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .token{transition:transform .18s linear}
+    *{animation-duration:.01ms !important}
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Interactive · Networking 101</div>
+    <h1>One message,<br><span class="hl">seven layers</span>.</h1>
+    <p class="sub">Watch a single chat message travel <b>down</b> your phone's stack, cross the internet as raw bits, and climb back <b>up</b> your friend's stack. Each layer wraps the message in its own header on the way out and unwraps it on the way in — that's <b>encapsulation</b>.</p>
+    <p class="msgline">The message we're sending: <b>“Wanna grab pizza tonight? 🍕”</b></p>
+  </header>
+
+  <div class="controls">
+    <button class="btn-send" id="send">▶ Send the message</button>
+    <button class="btn-ghost" id="reset">↺ Reset</button>
+    <div class="speed">
+      Speed
+      <div class="seg" id="speed">
+        <button data-v="1100" class="on">Chill</button>
+        <button data-v="520">Fast</button>
+      </div>
+    </div>
+  </div>
+  <div class="status" id="status">Press <b>Send</b> — or tap any layer to read about it.</div>
+
+  <div class="stage" id="stage">
+    <section class="device tx" id="tx">
+      <div class="dev-head"><span>📱 Your phone</span><span class="dot"></span></div>
+      <div class="rows" id="rowsTx"></div>
+    </section>
+
+    <div class="wire">
+      <div class="track"></div>
+      <div class="label">the internet<br>· just bits ·</div>
+    </div>
+
+    <section class="device rx" id="rx">
+      <div class="dev-head"><span>📱 Friend's phone</span><span class="dot"></span></div>
+      <div class="rows" id="rowsRx"></div>
+      <div class="bubble" id="bubble">Wanna grab pizza tonight? 🍕</div>
+    </section>
+
+    <div class="token hidden" id="token"></div>
+  </div>
+
+  <div class="detail" id="detail">
+    <div class="dtop"><span class="badge">?</span><h3>Tap a layer to inspect it</h3></div>
+    <p class="hint">Or hit <b>Send</b> and follow the message. The panel updates live as it passes through each layer.</p>
+  </div>
+
+  <footer>Encapsulation on the way down · decapsulation on the way up · same seven layers, mirror image</footer>
+</div>
+
+<script>
+// Layers ordered top (7) -> bottom (1)
+const L = [
+  {n:7,name:"Application",role:"You & the app",color:"var(--l7)",hex:"#ff6b9d",pdu:"Data",chip:"APP",
+    down:"Your chat app takes the text “Wanna grab pizza tonight? 🍕” and hands it to the network to be sent.",
+    up:"The app decodes the final message and paints it into a chat bubble on screen. Delivered! 🍕",
+    analog:"This is the layer <b>you</b> actually touch — the app itself. Everything below is invisible plumbing.",
+    protos:["HTTP/HTTPS","XMPP","DNS","SMTP"]},
+  {n:6,name:"Presentation",role:"Translate & encrypt",color:"var(--l6)",hex:"#ffa94d",pdu:"Data",chip:"🔒ENC",
+    down:"The text and emoji are encoded into standard UTF-8 bytes, then encrypted — so anyone snooping sees gibberish.",
+    up:"The bytes are decrypted and decoded back into readable text and that pizza emoji.",
+    analog:"Translating your note into an agreed language, then sealing it in a <b>coded, tamper-proof envelope</b>.",
+    protos:["TLS/SSL","UTF-8","JPEG","gzip"]},
+  {n:5,name:"Session",role:"Keep the conversation",color:"var(--l5)",hex:"#ffd43b",pdu:"Data",chip:"SESS",
+    down:"A session tags this message to your ongoing chat, so it never gets mixed up with your other conversations.",
+    up:"The session confirms this belongs to your live conversation with this friend, and lets it through.",
+    analog:"Staying on the <b>same phone call</b> from “hello” to “bye” — the conversation stays open and organised.",
+    protos:["Sockets","Session tokens"]},
+  {n:4,name:"Transport",role:"Chunk & guarantee",color:"var(--l4)",hex:"#69db7c",pdu:"Segment",chip:"TCP",
+    down:"Split into numbered segments and stamped with port numbers. TCP promises they arrive complete and in order.",
+    up:"Segments are reassembled in the right order; the port number routes them to the chat app specifically.",
+    analog:"A <b>careful courier</b> (TCP) that numbers every box and confirms delivery — vs. UDP, which just fires and forgets.",
+    protos:["TCP","UDP","Ports"]},
+  {n:3,name:"Network",role:"Address & route",color:"var(--l3)",hex:"#38d9d9",pdu:"Packet",chip:"IP",
+    down:"Each segment becomes a packet stamped with your IP and your friend's IP. Routers use these to choose a path.",
+    up:"The destination IP confirms the packet reached the right device on the network.",
+    analog:"The <b>citywide GPS</b>: it finds a route across the internet, hopping router to router.",
+    protos:["IP","ICMP (ping)","Routers"]},
+  {n:2,name:"Data Link",role:"Next hop",color:"var(--l2)",hex:"#4dabf7",pdu:"Frame",chip:"MAC",
+    down:"Wrapped in a frame carrying the MAC address of the very next device (your Wi-Fi router), plus an error-check.",
+    up:"The frame's error-check is verified and the MAC address confirms “yes, this hop was for me.”",
+    analog:"The <b>local street address</b> — hand this to the specific mailbox next door. Rewritten at every hop.",
+    protos:["Ethernet","Wi-Fi (802.11)","MAC","Switches"]},
+  {n:1,name:"Physical",role:"Raw signal",color:"var(--l1)",hex:"#b197fc",pdu:"Bits",chip:"",
+    down:"The frame becomes raw bits — radio waves leaving your phone's antenna. Data stops being an idea and becomes physics.",
+    up:"Incoming radio waves are read back into 1s and 0s, ready to be rebuilt into a frame.",
+    analog:"The actual <b>roads and airwaves</b> the signal travels on. A dead antenna or cut cable is a Layer-1 problem.",
+    protos:["Wi-Fi radio","Fiber","Copper","Voltage"]},
+];
+
+const rowsTx = document.getElementById('rowsTx');
+const rowsRx = document.getElementById('rowsRx');
+const stage  = document.getElementById('stage');
+const token  = document.getElementById('token');
+const detail = document.getElementById('detail');
+const statusEl = document.getElementById('status');
+const bubble = document.getElementById('bubble');
+const sendBtn = document.getElementById('send');
+const resetBtn = document.getElementById('reset');
+
+let STEP = 1100;
+document.querySelectorAll('#speed button').forEach(b=>{
+  b.onclick=()=>{document.querySelectorAll('#speed button').forEach(x=>x.classList.remove('on'));b.classList.add('on');STEP=+b.dataset.v;};
+});
+
+function makeRow(layer, side){
+  const r=document.createElement('div');
+  r.className='row';r.tabIndex=0;r.style.setProperty('--lc',layer.color);
+  r.dataset.n=layer.n;r.dataset.side=side;
+  r.innerHTML=`<span class="num">${layer.n}</span>
+    <span class="nm">${layer.name}</span>
+    <span class="pdu">${layer.pdu}</span>
+    <span class="jb">${layer.role}</span>`;
+  if(side==='tx'){
+    r.onclick=()=>{if(!running)showDetail(layer,'down','static');};
+    r.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!running){e.preventDefault();showDetail(layer,'down','static');}};
+  }
+  return r;
+}
+L.forEach(l=>rowsTx.appendChild(makeRow(l,'tx')));
+L.forEach(l=>rowsRx.appendChild(makeRow(l,'rx')));
+
+function rowEl(side,n){return document.querySelector(`.row[data-side="${side}"][data-n="${n}"]`);}
+
+function showDetail(layer,phase,mode){
+  detail.style.setProperty('--dc',layer.color);
+  const text = phase==='up'?layer.up:layer.down;
+  const tag = mode==='static' ? '' :
+      (phase==='up'?'<span class="hint">↑ unwrapping (decapsulation)</span>':'<span class="hint">↓ wrapping (encapsulation)</span>');
+  detail.innerHTML=`
+    <div class="dtop">
+      <span class="badge" style="--dc:${layer.color}">L${layer.n}</span>
+      <h3>${layer.name}</h3>
+      <span class="role">· ${layer.role} · unit: ${layer.pdu}</span>
+    </div>
+    <p>${text}</p>
+    <p class="analog">${layer.analog}</p>
+    <div class="protos">${layer.protos.map(p=>`<span>${p}</span>`).join('')}</div>
+    ${tag}`;
+}
+
+// token rendering
+let chips=[]; // {label,hex}
+function renderToken(form){
+  token.classList.toggle('bits', form==='Bits');
+  if(form==='Bits'){
+    token.innerHTML=`<span class="bitstream" id="bs">01001101</span>`;
+    return;
+  }
+  const chipHTML=chips.map(c=>`<span class="chip" style="background:${c.hex}">${c.label}</span>`).join('');
+  token.innerHTML=`${chipHTML}<span class="pay">🍕</span><span class="form">${form}</span>`;
+}
+
+function centerOn(el){
+  const s=stage.getBoundingClientRect();
+  const r=el.getBoundingClientRect();
+  const tr=token.getBoundingClientRect();
+  const x=r.left - s.left + r.width/2 - tr.width/2;
+  const y=r.top  - s.top  + r.height/2 - tr.height/2;
+  token.style.transform=`translate(${x}px,${y}px)`;
+}
+
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let running=false, cancel=false;
+
+function clearActive(){document.querySelectorAll('.row.active').forEach(r=>r.classList.remove('active'));}
+
+async function run(){
+  if(running)return; running=true; cancel=false;
+  sendBtn.disabled=true; resetBtn.disabled=false;
+  bubble.classList.remove('show');
+  chips=[]; clearActive();
+  token.classList.remove('hidden');
+  renderToken('Data');
+  // place at TX L7
+  centerOn(rowEl('tx',7)); await wait(120);
+
+  // DOWN: L7 -> L1 on tx
+  for(const layer of L){ // L is 7..1
+    if(cancel)return stop();
+    const row=rowEl('tx',layer.n);
+    clearActive(); row.classList.add('active');
+    if(layer.chip) chips.push({label:layer.chip,hex:layer.hex});
+    renderToken(layer.pdu);
+    centerOn(row);
+    showDetail(layer,'down','live');
+    statusEl.innerHTML=`↓ Wrapping at <b>Layer ${layer.n} · ${layer.name}</b> — now a <b>${layer.pdu}</b>`;
+    await wait(STEP);
+  }
+
+  // CROSS the wire
+  if(cancel)return stop();
+  clearActive();
+  statusEl.innerHTML=`⚡ Crossing the internet as raw <b>bits</b> — routers hop it along, address by address`;
+  renderToken('Bits');
+  const bs=document.getElementById('bs');
+  let flip=setInterval(()=>{if(bs)bs.textContent=Array.from({length:8},()=>Math.random()<.5?0:1).join('');},110);
+  centerOn(rowEl('rx',1));
+  await wait(Math.max(STEP,900));
+  clearInterval(flip);
+
+  // UP: L1 -> L7 on rx
+  const up=[...L].reverse(); // 1..7
+  for(const layer of up){
+    if(cancel)return stop();
+    const row=rowEl('rx',layer.n);
+    clearActive(); row.classList.add('active');
+    renderToken(layer.pdu);
+    centerOn(row);
+    // strip this layer's header on the way up (except physical, which added none)
+    if(layer.chip){ chips=chips.filter(c=>c.label!==layer.chip); }
+    // re-render after strip so the chip visibly pops off, but keep current form label
+    if(layer.pdu!=='Bits'){ renderToken(layer.pdu); }
+    showDetail(layer,'up','live');
+    statusEl.innerHTML=`↑ Unwrapping at <b>Layer ${layer.n} · ${layer.name}</b>`;
+    await wait(STEP);
+  }
+
+  // deliver
+  if(cancel)return stop();
+  token.classList.add('hidden');
+  bubble.classList.add('show');
+  statusEl.innerHTML=`✅ <b>Delivered.</b> Same seven layers, in reverse. That's the whole journey.`;
+  running=false; sendBtn.disabled=false;
+}
+
+function stop(){running=false;cancel=false;sendBtn.disabled=false;}
+
+function reset(){
+  cancel=true; running=false;
+  clearActive(); chips=[];
+  token.classList.add('hidden');
+  bubble.classList.remove('show');
+  sendBtn.disabled=false; resetBtn.disabled=false;
+  statusEl.innerHTML=`Press <b>Send</b> — or tap any layer to read about it.`;
+  detail.style.setProperty('--dc','var(--muted)');
+  detail.innerHTML=`<div class="dtop"><span class="badge">?</span><h3>Tap a layer to inspect it</h3></div>
+    <p class="hint">Or hit <b>Send</b> and follow the message. The panel updates live as it passes through each layer.</p>`;
+}
+
+sendBtn.onclick=()=>{ if(running){return;} reset(); cancel=false; setTimeout(run,60); };
+resetBtn.onclick=reset;
+window.addEventListener('resize',()=>{const a=document.querySelector('.row.active');if(a&&!token.classList.contains('hidden'))centerOn(a);});
+</script>
